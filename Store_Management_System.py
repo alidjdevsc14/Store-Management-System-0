@@ -1,12 +1,14 @@
 import sqlite3
 import sys
+from datetime import datetime
+
 from tabulate import tabulate
 
 
 class Store:
 
     @classmethod
-    def available_product(cls):
+    def available_product(cls, mail):
         type3 = ''
         try:
             type3 = int(input("We have two types of products available :\n\t"
@@ -18,7 +20,7 @@ class Store:
                               "Enter your choice: "))
         except ValueError:
             print("Invalid input. Only Numeric value is allowed.")
-            cls.available_product()
+            cls.available_product(mail)
         if type3 == 1:
             cls.show_data()
         elif type3 == 2:
@@ -26,39 +28,35 @@ class Store:
         elif type3 == 3:
             cls.search_by_accessories()
         elif type3 == 4:
-            Buyer.owner()
+            Buyer.owner(mail)
         elif type3 == 5:
             sys.exit()
         else:
             print("\nInvalid input. Please enter the above mentioned number...!\n")
-            cls.available_product()
-        cls.another()
+            cls.available_product(mail)
+        cls.another(mail)
 
     @classmethod
-    def add_data(cls):
+    def add_data(cls, mail):
         # Connect to the database (or create it if it doesn't exist)
         conn = sqlite3.connect('Store.db')
-
         # Create a cursor object to execute SQL commands
         cursor = conn.cursor()
-
         # Create the "users" table if it doesn't exist
         cursor.execute('''CREATE TABLE IF NOT EXISTS products
                           (product_id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL, 
                           quantity INTEGER, category TEXT)''')
-        # cls.show_data()
         try:
             cls.show_data()
         except:
             print("Currently we don't have any product in our store")
-
         product = True
         while product:
             try:
                 product_id = int(input("Enter the product_id: "))
                 if Store.chk_data(product_id):
                     print("Product ID already exists. Try with another id\n")
-                    cls.add_data()
+                    cls.add_data(mail)
                 else:
                     pass
                 name = input("Enter a name: ")
@@ -76,34 +74,27 @@ class Store:
                 # Insert the user data into the "products" table
                 cursor.execute("INSERT INTO products (product_id, name, price, quantity, category) VALUES (?,?,?,?,?)",
                                (product_id, name, price, quantity, category))
-
                 # Save the changes to the database
                 conn.commit()
-
-                # cls.show_data()
                 conn.close()
-
             except ValueError:
                 print("invalid input")
-                cls.add_data()
-
+                cls.add_data(mail)
             want = input("\nDo you want to add more Products Y/N ? ")
             if want == "n" or want == "N":
                 print("no")
                 break
             else:
-                cls.add_data()
+                cls.add_data(mail)
             product = False
-        cls.another()
+        cls.another(mail)
 
     @classmethod
     def show_data(cls):
         # Connect to the database
         conn = sqlite3.connect('Store.db')
-
         # Create a cursor object to execute SQL commands
         cursor = conn.cursor()
-
         # Select all data from the "products" table
         cursor.execute("SELECT * FROM products")
 
@@ -202,10 +193,8 @@ class Store:
     @classmethod
     def update_price(cls):
         cls.show_data()
-
         conn = sqlite3.connect('Store.db')
         cursor = conn.cursor()
-
         # Create the SQL query
         query = "UPDATE products SET price = ? WHERE product_id = ?"
         product_id = input("Enter Product ID: ")
@@ -228,10 +217,8 @@ class Store:
     @classmethod
     def update_category(cls):
         cls.show_data()
-
         conn = sqlite3.connect('Store.db')
         cursor = conn.cursor()
-
         # Create the SQL query
         query = "UPDATE products SET category = ? WHERE product_id = ?"
         product_id = input("Enter Product ID: ")
@@ -242,8 +229,7 @@ class Store:
         else:
             print("Product ID not found. Try with existing ID......!\n")
             cls.update_category()
-
-        # Commit the changes
+        # Commit the change
         conn.commit()
         cls.show_data()
         # Close the connection
@@ -252,10 +238,8 @@ class Store:
     @classmethod
     def update_quantity(cls):
         cls.show_data()
-
         conn = sqlite3.connect('Store.db')
         cursor = conn.cursor()
-
         # Create the SQL query
         query = "UPDATE products SET quantity = quantity + ? WHERE product_id = ?"
         product_id = input("Enter Product ID: ")
@@ -265,7 +249,6 @@ class Store:
                 if u.isdigit() and int(u) > 0:
                     break
                 print("Invalid input. Please enter a positive integer.")
-
             # Execute the query
             cursor.execute(query, (u, product_id))
         else:
@@ -281,13 +264,11 @@ class Store:
     def chk_data(cls, product_id):
         # Connect to the database
         conn = sqlite3.connect('Store.db')
-
         # Create a cursor object to execute SQL commands
         c = conn.cursor()
         # Execute a SELECT statement to check if the product ID already exists
         c.execute("SELECT * FROM products WHERE product_id=?", (product_id,))
         result = c.fetchone()
-
         # Close the connection to the database
         conn.close()
         if result is None:
@@ -296,7 +277,7 @@ class Store:
             return True
 
     @classmethod
-    def another(cls):
+    def another(cls, mail):
         transaction = True
         while transaction:
             want = input("Do you want any other transaction???\n"
@@ -304,7 +285,7 @@ class Store:
                          "or any other key to break\n"
                          "Enter: ")
             if want == "y" or want == "Y":
-                Buyer.owner()
+                Buyer.owner(mail)
             else:
                 sys.exit()
 
@@ -314,7 +295,7 @@ class Buyer(Store):
         self.name = name
 
     @classmethod
-    def buy(cls):
+    def buy(cls, mail):
         user_input = ''
         try:
             user_input = int(input(
@@ -325,19 +306,18 @@ class Buyer(Store):
                 "Please enter:  "))
         except ValueError:
             print("\nonly Integer value is allowed \n")
-            cls.buy()
-
+            cls.buy(mail)
         if user_input == 1:
-            return Customer.choice()
+            return Customer.choice(mail)
         elif user_input == 2:
-            return Buyer.owner()
+            return Buyer.owner(mail)
         else:
             # Handle invalid input
             print("Invalid input. Please enter '1' for 'buyer' or '2' for 'owner'.")
-            cls.buy()
+            cls.buy(mail)
 
     @classmethod
-    def owner(cls):
+    def owner(cls, mail):
         print("Welcome owner!")
         type2 = ''
         try:
@@ -354,49 +334,49 @@ class Buyer(Store):
                               "Enter your choice: "))
         except:
             print("Invalid input. Only Numeric value is allowed.")
-            cls.owner()
-
+            cls.owner(mail)
         if type2 == 1:
-            Store.available_product()
+            Store.available_product(mail)
         elif type2 == 2:
-            Store.add_data()
+            Store.add_data(mail)
             print("\nNew Product Added")
         elif type2 == 3:
             Store.update_name()
             print("\nProduct Name updated")
-            Store.another()
+            Store.another(mail)
         elif type2 == 4:
             Store.update_price()
             print("\nProduct Price updated")
-            Store.another()
+            Store.another(mail)
         elif type2 == 5:
             Store.update_quantity()
             print("\nProduct Quantity updated")
-            Store.another()
+            Store.another(mail)
         elif type2 == 6:
             Store.update_category()
             print("\nProduct Category updated")
-            Store.another()
+            Store.another(mail)
         elif type2 == 7:
             Store.del_data()
             print("\nProduct Deleted")
-            Store.another()
+            Store.another(mail)
         elif type2 == 8:
-            Buyer.buy()
+            Buyer.buy(mail)
         elif type2 == 9:
             sys.exit()
         else:
             print("\nInvalid input. Please enter the above mentioned number...!\n")
-            cls.owner()
+            cls.owner(mail)
 
 
 class Customer(Store):
-    def __init__(self, name, quantity):
+    def __init__(self, name, quantity, mail):
         self.name = name
         self.quantity = quantity
+        self.mail = mail
 
     @classmethod
-    def choice(cls):
+    def choice(cls, mail):
         type1 = ''
         try:
             type1 = int(input(
@@ -410,47 +390,47 @@ class Customer(Store):
                 "Please Enter your choice: "))
         except ValueError:
             print("\nonly Integer value is allowed \n")
-            cls.choice()
+            cls.choice(mail)
         if type1 == 1:
             print("\n******** We have following Products are available in our Store ********")
             Store.show_data()
-            return Customer.sell_product()
+            return Customer.sell_product(mail)
         elif type1 == 2:
             print("\n******** We have following Products are available in our Store ********")
             Store.search_by_mobile()
-            return Customer.sell_product()
+            return Customer.sell_product(mail)
         elif type1 == 3:
             print("\n******** We have following Products are available in our Store ********")
             Store.search_by_accessories()
-            return Customer.sell_product()
+            return Customer.sell_product(mail)
         elif type1 == 4:
-            Buyer.buy()
+            Buyer.buy(mail)
         elif type1 == 5:
             sys.exit()
         else:
             print("\nInvalid input. Please enter the above mentioned number...!\n")
-            cls.choice()
+            cls.choice(mail)
 
     @classmethod
-    def sell_product(cls):
+    def sell_product(cls, mail):
         product_id = input("Enter the Product ID: ")
         if Store.chk_data(product_id):
             pass
         else:
             print("\nsorry.......!Product not Available\n")
-            cls.another()
+            cls.another(mail)
         try:
             customer_req = int(input("Enter the Product quantity: "))
-            if Customer.chk_quantity(product_id, customer_req):
+            if Customer.chk_quantity(product_id, customer_req, mail):
                 print("if")
             else:
-                cls.another()
+                cls.another(mail)
         except ValueError:
             print("Invalid Value. Please Enter only numeric value")
-            cls.sell_product()
+            cls.sell_product(mail)
 
     @classmethod
-    def chk_quantity(cls, product_id, customer_req):
+    def chk_quantity(cls, product_id, customer_req, mail):
         conn = sqlite3.connect('Store.db')
         # Create a cursor to execute SQL statements
         cur = conn.cursor()
@@ -468,17 +448,59 @@ class Customer(Store):
             print("Please Enter quantity less than or equal in our Store......!\n")
             return False
         else:
-            cls.remove_data(customer_req, product_id)
+            cls.remove_data(customer_req, product_id, mail)
 
     @classmethod
-    def remove_data(cls, customer_req, product_id):
+    def remove_data(cls, customer_req, product_id, mail):
+
         conn = sqlite3.connect('Store.db')
         # create a cursor
         cur = conn.cursor()
+        print("here", mail)
         print("updating.........")
         # update the quantity of the product
         cur.execute("UPDATE products SET quantity = quantity - ? WHERE product_id = ?",
                     (customer_req, product_id))
+        cur.execute("SELECT price FROM products WHERE product_id=?", (product_id,))
+        num = cur.fetchone()
+        one = num[0]
+        print(one)
+        total_price = one * customer_req
+        print(total_price)
+        cur.execute("SELECT product_id, name FROM products WHERE product_id=?", (product_id,))
+        data1 = cur.fetchone()
+        product_id = data1[0]
+        print(product_id)
+        name = data1[1]
+        print(name)
+        print(data1)
+        cur.execute("SELECT user_id, user_email FROM users WHERE user_email=?", (mail,))
+        data2 = cur.fetchone()
+        user_id = data2[0]
+        print(user_id)
+        user_email = data2[1]
+        print(user_email)
+        print(data2)
+        product_quantity = customer_req
+        date_time = datetime.now()
+        # Create the "users" table if it doesn't exist
+        cur.execute('''
+                        CREATE TABLE IF NOT EXISTS records (
+                        record_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            product_id TEXT ,
+                            name TEXT ,
+                            user_id TEXT ,
+                            user_email TEXT ,
+                            product_quantity TEXT ,
+                            total_price TEXT,
+                            date_time TIMESTAMP
+                        )
+                    ''')
+        cur.execute(
+            "INSERT INTO records "
+            "(product_id, name, user_id, user_email, product_quantity, total_price, date_time) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (product_id, name, user_id, user_email, product_quantity, total_price, date_time))
         # commit the changes to the database
         conn.commit()
         cls.show_data()
@@ -486,7 +508,7 @@ class Customer(Store):
         conn.close()
 
     @classmethod
-    def another(cls):
+    def another(cls, mail):
         transaction = True
         while transaction:
             want = input("Do you want any other transaction???\n"
@@ -494,14 +516,81 @@ class Customer(Store):
                          "or any other key to break\n"
                          "Enter: ")
             if want == "y" or want == "Y":
-                Customer.choice()
+                Customer.choice(mail)
             else:
                 sys.exit()
 
 
+class User:
+
+    @classmethod
+    def user_type(cls):
+        import sqlite3
+        conn = sqlite3.connect('Store.db')
+        cursor = conn.cursor()
+
+        # Create the table to store user information
+        cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_role TEXT NOT NULL,
+                    user_email TEXT NOT NULL,
+                    time_date TIMESTAMP
+                )
+            ''')
+        user_email = input("Enter your email address: ")
+        conn = sqlite3.connect('Store.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE user_email=?", (user_email,))
+        result = cursor.fetchone()
+        if result is None:
+            return cls.add_user(user_email)
+        mail = result[2]
+        if result:
+            user_role = result[1]
+            if user_role == "customer":
+                print("Customer")
+                return Customer.choice(mail)
+            elif user_role == "owner":
+                # print("Welcome Owner....!")
+                return Buyer.owner(mail)
+        else:
+            print("Email not found.........!\nMention your role to add your email: ")
+            user_role = input("Enter your Type (customer/owner): ")
+            if user_role.lower() == "customer":
+                cursor.execute("INSERT INTO users (user_email, user_role) VALUES (?, ?)", (user_email, "customer"))
+                print("New Customer has been added....!")
+            elif user_role.lower() == "owner":
+                cursor.execute("INSERT INTO users (user_email, user_role) VALUES (?, ?)", (user_email, "owner"))
+                print("New Owner has been added.......!")
+            else:
+                print("Invalid role.")
+        conn.commit()
+        conn.close()
+
+    @classmethod
+    def add_user(cls, user_email):
+        time_date = datetime.now()
+
+        conn = sqlite3.connect('Store.db')
+        cursor = conn.cursor()
+        print("Email not found.........!\nMention your role to add your email: ")
+        user_role = input("Enter your Type (customer/owner): ")
+        if user_role.lower() == "customer":
+            cursor.execute("INSERT INTO users (user_email, user_role, time_date) VALUES (?, ?, ?)", (user_email, "customer", time_date))
+            print("New Customer has been added....!")
+        elif user_role.lower() == "owner":
+            cursor.execute("INSERT INTO users (user_email, user_role, time_date) VALUES (?, ?, ?)", (user_email, "owner", time_date))
+            print("New Owner has been added.......!")
+        else:
+            print("Invalid role.")
+        conn.commit()
+        conn.close()
+
+
 def main():
-    buyer = Buyer(name='')
-    buyer.buy()
+    user = User()
+    user.user_type()
 
 
 main()
