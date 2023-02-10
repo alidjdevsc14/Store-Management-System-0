@@ -1,6 +1,7 @@
 import sqlite3
 import sys
-from datetime import datetime
+# from datetime import datetime
+import time
 
 from tabulate import tabulate
 
@@ -277,6 +278,25 @@ class Store:
             return True
 
     @classmethod
+    def sell_record(cls, mail):
+        conn = sqlite3.connect('Store.db')
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM records")
+            column_names = [i[0] for i in cursor.description]
+            data = conn.execute("SELECT * FROM records")
+            row = []
+            for n in data:
+                row.append(n)
+            try:
+                print(tabulate(row, headers=column_names, tablefmt='fancy_grid', colalign=("left",)))
+            except:
+                print("Not available......!\n You don't have any previous record")
+        except:
+            print("Currently we don't have any record history")
+        cls.another(mail)
+
+    @classmethod
     def another(cls, mail):
         transaction = True
         while transaction:
@@ -329,7 +349,7 @@ class Buyer(Store):
                               "5. Update Product Quantity\n\t"
                               "6. Update Product Category\n\t"
                               "7. Delete Product \n\t"
-                              "8. Main Menu\n\t"
+                              "8. Selling Record\n\t"
                               "9. Exit\n"
                               "Enter your choice: "))
         except:
@@ -361,7 +381,8 @@ class Buyer(Store):
             print("\nProduct Deleted")
             Store.another(mail)
         elif type2 == 8:
-            Buyer.buy(mail)
+            Store.sell_record(mail)
+            Store.another(mail)
         elif type2 == 9:
             sys.exit()
         else:
@@ -385,7 +406,7 @@ class Customer(Store):
                 "1. All Products\n\t"
                 "2. Phone\n\t"
                 "3. Accessories\n\t"
-                "4. Main Menu\n\t"
+                "4. Previous History\n\t"
                 "5. Exit\n"
                 "Please Enter your choice: "))
         except ValueError:
@@ -404,7 +425,7 @@ class Customer(Store):
             Store.search_by_accessories()
             return Customer.sell_product(mail)
         elif type1 == 4:
-            Buyer.buy(mail)
+            cls.previous_record(mail)
         elif type1 == 5:
             sys.exit()
         else:
@@ -426,7 +447,7 @@ class Customer(Store):
             else:
                 cls.another(mail)
         except ValueError:
-            print("Invalid Value. Please Enter only numeric value")
+            print("Invalid Value. Please Enter only in digits value or whole number ! ")
             cls.sell_product(mail)
 
     @classmethod
@@ -448,41 +469,31 @@ class Customer(Store):
             print("Please Enter quantity less than or equal in our Store......!\n")
             return False
         else:
-            cls.remove_data(customer_req, product_id, mail)
+            cls.record_data(customer_req, product_id, mail)
 
     @classmethod
-    def remove_data(cls, customer_req, product_id, mail):
+    def record_data(cls, customer_req, product_id, mail):
 
         conn = sqlite3.connect('Store.db')
         # create a cursor
         cur = conn.cursor()
-        print("here", mail)
-        print("updating.........")
         # update the quantity of the product
         cur.execute("UPDATE products SET quantity = quantity - ? WHERE product_id = ?",
                     (customer_req, product_id))
         cur.execute("SELECT price FROM products WHERE product_id=?", (product_id,))
         num = cur.fetchone()
         one = num[0]
-        print(one)
         total_price = one * customer_req
-        print(total_price)
         cur.execute("SELECT product_id, name FROM products WHERE product_id=?", (product_id,))
         data1 = cur.fetchone()
         product_id = data1[0]
-        print(product_id)
         name = data1[1]
-        print(name)
-        print(data1)
         cur.execute("SELECT user_id, user_email FROM users WHERE user_email=?", (mail,))
         data2 = cur.fetchone()
         user_id = data2[0]
-        print(user_id)
         user_email = data2[1]
-        print(user_email)
-        print(data2)
         product_quantity = customer_req
-        date_time = datetime.now()
+        date_time = time.strftime("%a, %d %b %Y %H:%M:%S")
         # Create the "users" table if it doesn't exist
         cur.execute('''
                         CREATE TABLE IF NOT EXISTS records (
@@ -506,6 +517,25 @@ class Customer(Store):
         cls.show_data()
         # close the connection
         conn.close()
+
+    @classmethod
+    def previous_record(cls, mail):
+        conn = sqlite3.connect('Store.db')
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT * FROM records")
+            column_names = [i[0] for i in cursor.description]
+            data = conn.execute("SELECT * FROM records where user_email=?", (mail,))
+            row = []
+            for n in data:
+                row.append(n)
+            try:
+                print(tabulate(row, headers=column_names, tablefmt='fancy_grid', colalign=("left",)))
+            except:
+                print("Not available......!\nYoy Don't have any previous record")
+        except:
+            print("Currently we don't have any record History !")
+        cls.another(mail)
 
     @classmethod
     def another(cls, mail):
@@ -555,32 +585,24 @@ class User:
                 # print("Welcome Owner....!")
                 return Buyer.owner(mail)
         else:
-            print("Email not found.........!\nMention your role to add your email: ")
-            user_role = input("Enter your Type (customer/owner): ")
-            if user_role.lower() == "customer":
-                cursor.execute("INSERT INTO users (user_email, user_role) VALUES (?, ?)", (user_email, "customer"))
-                print("New Customer has been added....!")
-            elif user_role.lower() == "owner":
-                cursor.execute("INSERT INTO users (user_email, user_role) VALUES (?, ?)", (user_email, "owner"))
-                print("New Owner has been added.......!")
-            else:
-                print("Invalid role.")
+            print("Invalid role.")
         conn.commit()
         conn.close()
 
     @classmethod
     def add_user(cls, user_email):
-        time_date = datetime.now()
-
+        time_date = time.strftime("%a, %d %b %Y %H:%M:%S")
         conn = sqlite3.connect('Store.db')
         cursor = conn.cursor()
         print("Email not found.........!\nMention your role to add your email: ")
         user_role = input("Enter your Type (customer/owner): ")
         if user_role.lower() == "customer":
-            cursor.execute("INSERT INTO users (user_email, user_role, time_date) VALUES (?, ?, ?)", (user_email, "customer", time_date))
+            cursor.execute("INSERT INTO users (user_email, user_role, time_date) VALUES (?, ?, ?)",
+                           (user_email, "customer", time_date))
             print("New Customer has been added....!")
         elif user_role.lower() == "owner":
-            cursor.execute("INSERT INTO users (user_email, user_role, time_date) VALUES (?, ?, ?)", (user_email, "owner", time_date))
+            cursor.execute("INSERT INTO users (user_email, user_role, time_date) VALUES (?, ?, ?)",
+                           (user_email, "owner", time_date))
             print("New Owner has been added.......!")
         else:
             print("Invalid role.")
